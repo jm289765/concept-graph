@@ -4,21 +4,28 @@ import networkx as nx
 class GraphManager(nx.DiGraph):
 
     def __init__(self, incoming_graph_data=None, **attr):
-        super().__init__(incoming_graph_data, **attr)
+        if "next_id" in attr:
+            super().__init__(incoming_graph_data, **attr)
+        else:
+            super().__init__(incoming_graph_data, next_id=0, **attr)
+
         if 0 not in self.nodes:
             # root node
             # might be good to throw an error if there's no node 0 but there are other nodes
-            self.add_node(0, next_id=1)
-        elif "next_id" not in self.nodes[0]:
-            raise AttributeError("Graph node 0 does not have 'next_id' attribute.")
+
+            # right now, this makes the root node link to itself. this makes it easy to catch
+            # graph search algorithms that don't handle loops, so i'll leave it
+            self.add_node("root", title="root", content="")
+        elif self.nodes[0].get("type", "no type attribute") != "root":
+            raise ValueError("Graph node 0 does not have node type 'root'.")
 
     @property
     def next_id(self):
-        x = self.nodes[0]["next_id"]
-        self.nodes[0]["next_id"] += 1
+        x = self.graph["next_id"]
+        self.graph["next_id"] += 1
         return x
 
-    def add_node_type(self, type, title="", content="", parent=0) -> int:
+    def add_node(self, type="default", title="", content="", parent=0) -> int:
         """
         :param type: "concept", "explanation", or "comment"
         :param title: title of this node
@@ -27,31 +34,54 @@ class GraphManager(nx.DiGraph):
         :return: new node's id
         """
         _id = self.next_id
-        self.add_node(_id, type=type, title=title, content=content)
-        self.add_edge(parent, _id)
+        super().add_node(_id, type=type, title=title, content=content)
+        self.link_nodes(parent, _id)
         return _id
 
-    def add_concept(self, title: str, parent=0) -> int:
-        return self.add_node_type("concept", title=title, parent=parent)
+    def remove_node(self, _id):
+        if _id not in self.nodes:
+            return False
 
-    def add_explanation(self, content: str, parent=0) -> int:
-        return self.add_node_type("explanation", content=content, parent=parent)
+        if _id == 0:
+            raise ValueError("Cannot delete node 0")
 
-    def add_comment(self, content: str, parent=0) -> int:
-        return self.add_node_type("comment", content=content, parent=parent)
+        for n in self.successors(_id):
+            # todo: if successor has no other links, link it to root
+            pass
 
-    def link_nodes(self, parent: int, child: int):
-        self.add_edge(parent, child)
-        # todo: make a way for concept nodes to be linked to root via explanation's dependencies??
-        # or make concepts dependents of explanations instead of the other way around? make explanation point to concept?
-        # or make explanations have two-way edges.
+        super().remove_node(_id)
+
+    def link_nodes(self, parent: int, child: int, two_way: bool = False):
+        # removal of edge to root node has to happen first
+        # in case someone calls link_nodes with the root node
         if self.has_edge(0, child):
             self.remove_edge(0, child)
 
+        self.add_edge(parent, child)
+
+        if two_way:
+            self.add_edge(child, parent)
+        # todo: make a way for concept nodes to be linked to root via explanation's dependencies??
+        # or make concepts dependents of explanations instead of the other way around? make explanation point to concept?
+        # or make explanations have two-way edges.
+
         # later, this function will also add edge type attributes based on the type of the parent and child
 
-    def set_attr(self, _id, attr, val):
-        # todo: better error handling
+    def unlink_nodes(self, parent: int, child: int, two_way: bool = False):
+
+        # todo: if child has no other links, link it to root. same thing for two_way
+        if self.has_edge(parent, child):
+            self.remove_edge(parent, child)
+
+        if two_way:
+            if self.has_edge(child, parent):
+                self.remove_edge(child, parent)
+
+    def set_node_attr(self, _id, attr, val):
+        # todo: louder error handling. return a message
+        if attr is None or val is None:
+            return False
+
         if attr == "type":
             return False
 

@@ -50,7 +50,7 @@ def run_parser(g):
                 g = GraphManager(nx.read_gml(file, destringizer=destringizer))
             elif cmd == "add":
                 type, title, content, parent = args[0], args[1], args[2], int(args[3])
-                api.add_node(type, title, content, parent)
+                api.add(type, title, content, parent)
             elif cmd == "update":
                 _id, attr, val = int(args[0]), args[1], args[2]
                 api.update(_id, attr, val)
