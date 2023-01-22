@@ -1,10 +1,15 @@
+import json
+from typing import List
 import networkx as nx
 
 
 class GraphManager(nx.DiGraph):
 
+    # todo: maybe don't hardcode this? or put it somewhere else, it's more of an api thing
+    MAX_LIST_SIZE = 100  # for nodes_list() and edges_list(). edges_list uses 10 times this
+
     def __init__(self, incoming_graph_data=None, **attr):
-        if "next_id" in attr:
+        if "next_id" in attr:  # could replace "next_id" with self.number_of_nodes
             super().__init__(incoming_graph_data, **attr)
         else:
             super().__init__(incoming_graph_data, next_id=0, **attr)
@@ -25,16 +30,73 @@ class GraphManager(nx.DiGraph):
         self.graph["next_id"] += 1
         return x
 
-    def add_node(self, type="default", title="", content="", parent=0) -> int:
+    def nodes_list(self, ids: List):
+        """
+        :param ids: ids of nodes to return
+        :return: list of node data items. a node data item is a dict with the node's attributes
+        """
+        ret = []
+        for x in (ids if len(ids) > 0 else self.nodes):
+            n = self.nodes[x]
+            ret.append(n)
+            if len(ret) >= GraphManager.MAX_LIST_SIZE:
+                break
+        return ret
+
+    def edges_list(self, ids: List):
+        """
+        :param ids: ids of nodes to return
+        :return: list of edges that are connected to any of those nodes
+        """
+        # list of all edges attached to the given ids
+        # if this was a graph instead of a digraph, only self.edges would be needed
+        out_e = self.edges(nbunch=ids)
+        out_e = out_e if len(out_e) <= GraphManager.MAX_LIST_SIZE * 5 else out_e[:500]
+        in_e = self.in_edges(nbunch=ids)
+        in_e = in_e if len(in_e) <= GraphManager.MAX_LIST_SIZE * 5 else in_e[:500]
+        ret = [*out_e, *in_e]
+        return ret
+
+    def nodes_json(self, ids: List):
+        return json.dumps(self.nodes_list(ids))
+
+    def edges_json(self, ids: List):
+        return json.dumps(self.edges_list(ids))
+
+    def graph_json(self, ids: List):
+        ret = {"nodes": self.nodes_list(ids),
+               "edges": self.edges_list(ids)}
+        return json.dumps(ret)
+
+    def neighbors_edges_json(self, _id:int):
+        nodes = self.nodes_list(self.neighbor_ids(_id))
+        edges = self.edges_list([_id])
+        ret = {"nodes": nodes, "edges": edges}
+        return json.dumps(ret)
+
+    def neighbor_ids(self, _id:int):
+        """
+        :param _id: id of node to list neighbors of
+        :return: list of neighbors of node 'id'. includes the node itself, successors, and predecessors.
+        """
+        return [_id, *self.successors(_id), *self.predecessors(_id)]
+
+    def add_node(self, type="default", title="", content="", tags="", parent=0) -> int:
         """
         :param type: "concept", "explanation", or "comment"
         :param title: title of this node
         :param content: content of this node
+        :param tags: node's tags. comma-separated string.
         :param parent: parent of this node
         :return: new node's id
         """
         _id = self.next_id
-        super().add_node(_id, type=type, title=title, content=content)
+
+        typ = type
+        if typ == "root" and _id != 0:
+            typ = "concept"
+
+        super().add_node(_id, type=typ, title=title, content=content, tags=tags, id=_id)
         self.link_nodes(parent, _id)
         return _id
 
@@ -82,14 +144,19 @@ class GraphManager(nx.DiGraph):
         if attr is None or val is None:
             return False
 
-        if attr == "type":
+        if attr == "id":
             return False
 
-        if _id not in self.nodes:
+        if _id == 0 or _id not in self.nodes:
             return False
 
         if attr not in self.nodes[_id]:
+            # todo: make this check against a list of allowed attributes instead?
             return False
+
+        if attr == "tag":
+            # todo: handle tag formatting if necessary.
+            pass
 
         self.nodes[_id][attr] = val
         return True
