@@ -1,9 +1,20 @@
 import json
 from typing import List
 import networkx as nx
+import os.path
+
+
+def load_from_file(file_name):
+    if os.path.exists(file_name):
+        g = nx.readwrite.read_gml(file_name, label=None)
+        return GraphManager(g)
+
+    return False
 
 
 class GraphManager(nx.DiGraph):
+
+    load_from_file = load_from_file
 
     # todo: maybe don't hardcode this? or put it somewhere else, it's more of an api thing
     MAX_LIST_SIZE = 100  # for nodes_list() and edges_list(). edges_list uses 10 times this
@@ -38,6 +49,8 @@ class GraphManager(nx.DiGraph):
         ret = []
         for x in (ids if len(ids) > 0 else self.nodes):
             n = self.nodes[x]
+            n["id"] = x  # already set when the node is added,
+            # but networkx's generate_gml and read_gml don't let me keep an id attribute in nodes
             ret.append(n)
             if len(ret) >= GraphManager.MAX_LIST_SIZE:
                 break
@@ -160,3 +173,22 @@ class GraphManager(nx.DiGraph):
 
         self.nodes[_id][attr] = val
         return True
+
+    def save_to_file(self, file_name:str):
+        """
+        saves this graph to the file specified by fileName
+
+        :param file_name: file to save to
+        :return: nothing
+        """
+
+        with open(file_name + ".new", "w+") as f:
+            f.write("\n".join(nx.readwrite.generate_gml(self)))
+
+        # make a backup of the old version of the graph
+        if os.path.exists(file_name):
+            if os.path.exists(file_name + ".old"):
+                os.remove(file_name + ".old")
+            os.rename(file_name, file_name + ".old")
+
+        os.rename(file_name + ".new", file_name)

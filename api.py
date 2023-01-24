@@ -1,4 +1,5 @@
 import json
+import threading
 
 from networkx.readwrite import json_graph
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -6,6 +7,8 @@ from urllib.parse import urlparse, parse_qs
 from typing import Tuple, Callable, Dict, List, Any, Union
 
 from graphmanager import GraphManager
+
+api_lock = threading.Lock()
 
 
 def apply_func(keys: List[str], defaults: List[Union[str, int]], func: Callable,
@@ -35,7 +38,8 @@ def apply_func(keys: List[str], defaults: List[Union[str, int]], func: Callable,
         else:
             app.append(defaults[k])
 
-    return func(*app)
+    with api_lock:
+        return func(*app)
 
 
 class GraphAPI:
@@ -194,6 +198,9 @@ class GraphAPIHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(bytes(f"An error occurred: {str(e)}", "utf-8"))
             # todo: better error logging
+
+    def log_message(self, format_string, *args):
+        pass
 
     def do_GET(self):
         self.do_handle(self.api.get_handlers)
