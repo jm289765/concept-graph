@@ -1,14 +1,8 @@
-import json
-import threading
-
-from networkx.readwrite import json_graph
+import traceback
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from typing import Tuple, Callable, Dict, List, Any, Union
-
 from graphmanager import GraphManager
-
-api_lock = threading.Lock()
 
 
 def apply_func(keys: List[str], defaults: List[Union[str, int]], func: Callable,
@@ -38,8 +32,13 @@ def apply_func(keys: List[str], defaults: List[Union[str, int]], func: Callable,
         else:
             app.append(defaults[k])
 
-    with api_lock:
+    try:
         return func(*app)
+    except Exception as e:
+        print(e)
+        traceback.print_tb(e.__traceback__)
+
+    return None
 
 
 class GraphAPI:
@@ -155,8 +154,7 @@ unlink will just need id
         """
 
         def make_json_graph():
-            nl_dat = json_graph.node_link_data(self.g)
-            return json.dumps(nl_dat)
+            return self.g.graph_json(self.g.nodes)
 
         keys = []
         defaults = []
