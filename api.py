@@ -66,7 +66,8 @@ unlink will just need id
             "get-all-node-ids": (self.get_all_node_ids, "text/text"),
             "get-node": (self.get_node, "text/json"),
             "get-graph": (self.get_graph, "text/json"),
-            "get-neighbors": (self.get_neighbors, "text/json")
+            "get-neighbors": (self.get_neighbors, "text/json"),
+            "search": (self.search, "text/json"),
         }
 
         self.post_handlers: Dict[str, Tuple[Callable[[Dict[str, List[str]]], Any], str]] = {
@@ -117,6 +118,12 @@ unlink will just need id
         defaults = [0, None, None]
         func = self.g.set_node_attr
         # todo: return the node's json object?
+        return apply_func(keys, defaults, func, args)
+
+    def search(self, args):
+        keys = ["q"]
+        defaults = ["*:*"]
+        func = self.g.search
         return apply_func(keys, defaults, func, args)
 
     def link(self, args):

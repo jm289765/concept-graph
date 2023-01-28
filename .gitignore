@@ -1,4 +1,5 @@
-data/
+_redis/
+_solr/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

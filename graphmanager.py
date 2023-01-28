@@ -117,18 +117,30 @@ class GraphManager:
         """
         _id = self.next_id
 
+        # if updating these, also update solr schema and self.reindex and self.set_node_attr
         attrs = {"type": "concept" if type == "root" and _id != 0 else type,
                  "title": title,
                  "content": content,
                  "tags": tags,
                  "id": _id}
 
+        # add node to database
         self.db.set_attrs(_id, attrs)
         self.db.incr("next_id")
         self.link_nodes(parent, _id)
+
+        # add node to search index
+        self.db.add_search_index(attrs)
         return _id
 
     def remove_node(self, _id: int):
+        # remove all links to and from this node and add it to a "deleted" set in the db.
+        # make sure the deleted node isn't automatically linked as a child of the root node.
+        # when adding a new node, first check if there are any in the "deleted" set that
+        # can be repurposed.
+        # also, remember to remove this node's solr search index
+        raise NotImplementedError("Function \"GraphManager.delete_node(self, _id)\" not implemented")
+
         if not self.db.exists(_id):
             return False
 
@@ -217,11 +229,43 @@ class GraphManager:
             pass
 
         self.db.set_attr(_id, attr, val)
+
+        # if updating these, also update in self.add_node and self.reindex
+        if attr in ["title", "type", "content", "tags"]:  # probably shouldn't hardcode this,
+            # should get list of allowed attributes from the database instead
+            self.db.update_search_index(_id, {attr: val})
         return True
 
-    def delete_node(self, _id):
-        # remove all links to and from this node and add it to a "deleted" set in the db.
-        # make sure the deleted node isn't automatically linked as a child of the root node.
-        # when adding a new node, first check if there are any in the "deleted" set that
-        # can be repurposed.
-        raise NotImplementedError("Function \"GraphManager.delete_node(self, _id)\" not implemented")
+    def search(self, query):
+        """
+        :param query: search query
+        :return: list of dicts {"id", "title"} for some nodes that match the query
+        """
+        res = self.db.search_query(query)
+        ret = []
+        for doc in res:
+            # remove "_version_", use str title instead of list
+            ret.append({"id": doc["id"], "title": doc["title"][0]})
+        # if we want to make a "get more results" thing, use res["numFound"] and res["start"]
+        return json.dumps(ret)
+
+    def reindex(self):
+        """
+        will add all nodes to the search index. before you use this, make sure the search index data
+        has been cleared from solr manually.
+
+        :return: none
+        """
+        for n in self.nodes:
+            try:
+                ndat = self.db.get_attrs(n)
+                sdat = {  # if updating these, also update in self.add_node and self.set_node_attr
+                    "id": n,
+                    "title": ndat["title"],
+                    "type": ndat["type"],
+                    "content": ndat["content"],
+                    "tags": ndat["tags"]
+                }
+                self.db.add_search_index(sdat)
+            except Exception as e:
+                print(f"GraphManager.reindex(): Failed to index node {n}.")
