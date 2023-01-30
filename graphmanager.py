@@ -1,6 +1,6 @@
 from datetime import datetime
 import json
-from typing import List
+from typing import List, Iterable
 import database
 
 
@@ -34,9 +34,9 @@ class GraphManager:
         return x
 
     @property
-    def nodes(self):
+    def nodes(self) -> Iterable:
         """
-        :return: list of node ids
+        :return: iterable of all node ids
         """
         return range(0, self.next_id)
 
@@ -73,9 +73,17 @@ class GraphManager:
         return ret
 
     def nodes_json(self, ids: List):
+        """
+        :param ids: list of ids to get the json data for
+        :return: json data of the specified nodes, formatted as a string
+        """
         return json.dumps(self.nodes_list(ids))
 
     def edges_json(self, ids: List):
+        """
+        :param ids: list of node ids to get edge data for
+        :return: json data of the specified node's edges, formatted as a string
+        """
         return json.dumps(self.edges_list(ids))
 
     def graph_json(self, ids: List):
@@ -224,22 +232,26 @@ class GraphManager:
         :param _id: id of node whose attribute you want to set
         :param attr: which attribute to set. "type", "title", "tags", etc
         :param val: value to set the attribute to
-        :return: True if the attribute is updated, False or error otherwise
+        :return: id of updated node
         """
         # todo: louder error handling. return a message
         if attr is None or val is None:
-            return False
+            raise TypeError("set_node_attr: attr and val must not be None.")
 
-        if attr in ["id", "created", "last_modified"]:
-            return False
+        unchangeable = ["id", "created", "last_modified"]
+        if attr in unchangeable:
+            raise ValueError(f'set_node_attr: cannot set attributes {unchangeable}.')
 
         # make sure the node isn't the root and exists. relies on nodes not being deletable.
-        if _id == 0 or _id >= self.next_id:
-            return False
+        if _id == 0:
+            raise ValueError("set_node_attr: cannot set root node's attributes (node id 0).")
+
+        if _id >= self.next_id:
+            raise ValueError(f"set_node_attr: node {_id} does not exist.")
 
         if not self.db.has_attr(_id, attr):
             # todo: make this check against a list of allowed attributes instead?
-            return False
+            raise ValueError(f"set_node_attr: attribute '{attr}' does not exist in node '{_id}'.")
 
         self.db.set_attr(_id, attr, val)
         self.db.set_attr(_id, "last_modified", get_current_time())
@@ -248,7 +260,8 @@ class GraphManager:
         if attr in ["title", "type", "content", "tags"]:  # probably shouldn't hardcode this,
             # should get list of allowed attributes from the database instead
             self.db.update_search_index(_id, {attr: val})
-        return True
+
+        return _id
 
     def search(self, query):
         """

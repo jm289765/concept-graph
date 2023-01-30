@@ -1,3 +1,4 @@
+import json
 import traceback
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
@@ -63,7 +64,7 @@ unlink will just need id
         # todo: make everything return a json of the relevant nodes. make a convenient function for
         # converting nodes to json
         self.get_handlers: Dict[str, Tuple[Callable[[Dict[str, List[str]]], Any], str]] = {
-            "get-all-node-ids": (self.get_all_node_ids, "text/text"),
+            "get-all-node-ids": (self.get_all_node_ids, "text/json"),
             "get-node": (self.get_node, "text/json"),
             "get-graph": (self.get_graph, "text/json"),
             "get-neighbors": (self.get_neighbors, "text/json"),
@@ -71,12 +72,12 @@ unlink will just need id
         }
 
         self.post_handlers: Dict[str, Tuple[Callable[[Dict[str, List[str]]], Any], str]] = {
-            "add": (self.add, "text/text"),
+            "add": (self.add, "text/json"),
             "link": (self.link, "text/text"),
         }
 
         self.patch_handlers: Dict[str, Tuple[Callable[[Dict[str, List[str]]], Any], str]] = {
-            "update": (self.update, "text/text"),
+            "update": (self.update, "text/json"),
         }
 
         self.delete_handlers: Dict[str, Tuple[Callable[[Dict[str, List[str]]], Any], str]] = {
@@ -99,7 +100,7 @@ unlink will just need id
         """
         keys = ["type", "title", "content", "tags", "parent"]
         defaults = ["comment", "Untitled", "", "", 0]
-        func = self.g.add_node
+        func = lambda *_args: self.g.nodes_json([self.g.add_node(*_args)])
         return apply_func(keys, defaults, func, args)
 
     def delete(self, args):
@@ -110,13 +111,12 @@ unlink will just need id
 
     def update(self, args):
         """
-
         :param args: can have keys "id", "attr", and "val". "attr" can be "title", "content", "type"
-        :return:
+        :return: json of the updated node
         """
         keys = ["id", "attr", "val"]
         defaults = [0, None, None]
-        func = self.g.set_node_attr
+        func = lambda *_args: self.g.nodes_json([self.g.set_node_attr(*_args)])
         # todo: return the node's json object?
         return apply_func(keys, defaults, func, args)
 
@@ -142,8 +142,8 @@ unlink will just need id
     def get_all_node_ids(self, args):
         keys = []
         defaults = []
-        func = lambda: self.g.nodes
-        # todo: format this as json
+        func = lambda: json.dumps(list(self.g.nodes))
+        # todo: replace this with a 2-number node id range
         return apply_func(keys, defaults, func, args)
 
     def get_node(self, args):

@@ -2,8 +2,6 @@ from graphmanager import GraphManager
 from api import GraphAPI
 import threading
 
-graph_path = "data/graph.gml"
-
 
 def main():
     g = GraphManager()
