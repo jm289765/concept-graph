@@ -1,6 +1,14 @@
+from datetime import datetime
 import json
 from typing import List
 import database
+
+
+def get_current_time():
+    """
+    :return: current UTC time as UNIX timestamp
+    """
+    return datetime.utcnow().timestamp()
 
 
 class GraphManager:
@@ -117,20 +125,29 @@ class GraphManager:
         """
         _id = self.next_id
 
-        # if updating these, also update solr schema and self.reindex and self.set_node_attr
+        current_time = get_current_time()
         attrs = {"type": "concept" if type == "root" and _id != 0 else type,
                  "title": title,
                  "content": content,
                  "tags": tags,
-                 "id": _id}
+                 "id": _id,
+                 "created": current_time,
+                 "last_modified": current_time,
+                 }
 
         # add node to database
         self.db.set_attrs(_id, attrs)
         self.db.incr("next_id")
         self.link_nodes(parent, _id)
 
+        # if updating these, also update solr schema and self.reindex and self.set_node_attr
+        search_attrs = {"type": "concept" if type == "root" and _id != 0 else type,
+                        "title": title,
+                        "content": content,
+                        "tags": tags,
+                        "id": _id}
         # add node to search index
-        self.db.add_search_index(attrs)
+        self.db.add_search_index(search_attrs)
         return _id
 
     def remove_node(self, _id: int):
@@ -213,7 +230,7 @@ class GraphManager:
         if attr is None or val is None:
             return False
 
-        if attr == "id":
+        if attr in ["id", "created", "last_modified"]:
             return False
 
         # make sure the node isn't the root and exists. relies on nodes not being deletable.
@@ -224,11 +241,8 @@ class GraphManager:
             # todo: make this check against a list of allowed attributes instead?
             return False
 
-        if attr == "tag":
-            # todo: handle tag formatting if necessary.
-            pass
-
         self.db.set_attr(_id, attr, val)
+        self.db.set_attr(_id, "last_modified", get_current_time())
 
         # if updating these, also update in self.add_node and self.reindex
         if attr in ["title", "type", "content", "tags"]:  # probably shouldn't hardcode this,
