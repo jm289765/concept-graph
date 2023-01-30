@@ -88,7 +88,7 @@ unlink will just need id
         self.server = HTTPServer(("localhost", 8080), GraphAPIHandler)
 
     def start_server(self):
-        print(f"Starting server on port {self.server.server_port}...")
+        print(f"Concept Graph server listening on port {self.server.server_port}.")
         self.server.serve_forever()
 
     def add(self, args: Dict[str, List[str]]):
@@ -122,7 +122,7 @@ unlink will just need id
 
     def search(self, args):
         keys = ["q"]
-        defaults = ["*:*"]
+        defaults = [""]
         func = self.g.search
         return apply_func(keys, defaults, func, args)
 
@@ -189,14 +189,16 @@ class GraphAPIHandler(BaseHTTPRequestHandler):
             func, mime_type = handlers.get(cmd, (None, "text/text"))
 
             if func is None:
-                # todo: handle invalid request
-                raise AttributeError(f"Invalid API request: '{self.path}'")
-
-            res = func(args)
-            self.send_response(200)
-            self.send_header("Content-type", mime_type)
-            self.end_headers()
-            self.wfile.write(bytes(str(res), "utf-8"))
+                self.send_response(404)
+                self.send_header("Content-type", "text/text")
+                self.end_headers()
+                self.wfile.write(bytes(f"404 Error: Invalid API request: \"{self.path}\"", "utf-8"))
+            else:
+                res = func(args)
+                self.send_response(200)
+                self.send_header("Content-type", mime_type)
+                self.end_headers()
+                self.wfile.write(bytes(str(res), "utf-8"))
         except Exception as e:
             self.send_response(400)
             self.send_header("Content-type", "text/text")

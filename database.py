@@ -7,8 +7,11 @@ from typing import Dict, Any
 class Database:
 
     def __init__(self):
+
+        # todo: add authentication to redis and solr
+
+        # both of these will raise an error if their respective server isn't already running
         self.db = redis.Redis(decode_responses=True)
-        # todo: add authentication to solr
         self.solr = pysolr.Solr("http://localhost:8983/solr/graph_core/", always_commit=True)
 
     def set_attr(self, key, attr, val):
