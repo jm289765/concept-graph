@@ -23,7 +23,7 @@ def apply_func(keys: List[str], defaults: List[Union[str, int]], func: Callable,
     """
     app = []  # args to be given to func
     for k in range(len(keys)):
-        if keys[k] in args:
+        if keys[k] in args and args[keys[k]] is not None:
             if type(defaults[k]) is int:
                 app.append(int(args[keys[k]][0]))
             elif type(defaults[k]) is bool:
@@ -33,13 +33,8 @@ def apply_func(keys: List[str], defaults: List[Union[str, int]], func: Callable,
         else:
             app.append(defaults[k])
 
-    try:
-        return func(*app)
-    except Exception as e:
-        print(e)
-        traceback.print_tb(e.__traceback__)
-
-    return None
+    # don't catch errors here, they're handled in GraphAPIHandler.do_handle
+    return func(*app)
 
 
 class GraphAPI:
