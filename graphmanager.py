@@ -214,6 +214,9 @@ class GraphManager:
 
     def unlink_nodes(self, parent: int, child: int, two_way: bool = False):
 
+        if parent == 0 and child == 0:
+            raise ValueError("Cannot unlink node 0 from node 0.")
+
         # todo: if child has no other links, link it to root. same thing for two_way
         def remove_edge(_from, _to):
             self.db.remove_from_set(str(_to) + ".parents", _from)
@@ -274,7 +277,7 @@ class GraphManager:
             # remove "_version_", use str title instead of list
             ret.append({"id": doc["id"], "title": doc["title"][0]})
         # if we want to make a "get more results" thing, use res["numFound"] and res["start"]
-        return json.dumps(ret)
+        return json.dumps(ret)  # json.dumps should probably be in api.py
 
     def reindex(self):
         """

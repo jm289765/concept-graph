@@ -183,6 +183,9 @@ class GraphAPIHandler(BaseHTTPRequestHandler):
             args = parse_qs(req.query)
             func, mime_type = handlers.get(cmd, (None, "text/text"))
 
+            if self.handle_file_request(cmd):
+                return
+
             if func is None:
                 self.send_response(404)
                 self.send_header("Content-type", "text/text")
@@ -215,3 +218,29 @@ class GraphAPIHandler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         self.do_handle(self.api.delete_handlers)
+
+    def handle_file_request(self, file_name):
+        """
+        assumes that the file_name is valid
+
+        :param file_name: name of the file to send as an HTTP response
+        :return: True if the response is sent, False if the file_name is invalid
+        """
+        if file_name == "":
+            file_name = "page.html"
+
+        if file_name not in ["page.html", "main.js", "httprequests.js", "styles.css"]:
+            return False
+
+        with open(f"_web/{file_name}", "r") as file:
+            content_types = {
+                "html": "text/html",
+                "js": "text/javascript",
+                "css": "text/css"
+            }
+
+            self.send_response(200)
+            self.send_header("Content-type", content_types[file_name.split(".")[-1]])
+            self.end_headers()
+            self.wfile.write(bytes(file.read(), "utf-8"))
+            return True
