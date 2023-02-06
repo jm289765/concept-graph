@@ -1,5 +1,5 @@
-concept-graph is the server used by [concept-graph-web](https://github.com/jm289765/concept-graph-web). Don't use it for anything that's not localhost, it only uses http, not https.
+concept-graph is the server used by [concept-graph-web](https://github.com/jm289765/concept-graph-web).
 
-Uses [Redis](https://redis.io/) for a database and [Apache Solr](https://solr.apache.org/) for search indexing/querying.
+This server should only be hosted and accessed locally. I plan to eventually use it for remote access, but until then, I have no reason to implement any security measures. Current security problems include using HTTP instead of HTTPS and having no user authentication for PUT and PATCH requests.
 
-This project is a work in progress.
+Uses a [Redis](https://redis.io/) database and [Apache Solr](https://solr.apache.org/) as a search engine.

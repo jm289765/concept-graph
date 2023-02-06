@@ -99,6 +99,12 @@ unlink will just need id
         return apply_func(keys, defaults, func, args)
 
     def delete(self, args):
+        """
+        not implemented. see GraphManager.remove_node
+
+        :param args:
+        :return:
+        """
         keys = ["id"]
         defaults = [0]
         func = self.g.remove_node
@@ -106,7 +112,7 @@ unlink will just need id
 
     def update(self, args):
         """
-        :param args: can have keys "id", "attr", and "val". "attr" can be "title", "content", "type"
+        :param args: can have keys "id", "attr", and "val". "attr" can be "title", "content", "type", etc
         :return: json of the updated node
         """
         keys = ["id", "attr", "val"]

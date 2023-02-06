@@ -43,7 +43,7 @@ class GraphManager:
     def nodes_list(self, ids: List) -> List:
         """
         :param ids: ids of nodes to return
-        :return: list of node data items. a node data item is a dict with the node's attributes
+        :return: list of node data items. a node data item is a dict with the node's attributes as keys.
         """
         ret = []
         for x in ids:
@@ -59,7 +59,8 @@ class GraphManager:
         at the beginning of the ids list.
 
         :param ids: ids of nodes to return
-        :return: list of edges that are connected to any of those nodes
+        :return: list of edges that are connected to any of those nodes. an individual edge
+        is a 2-element list: [sourceID, targetID]
         """
         # todo: add a way to only include edges that are between two of the nodes listed in the ids param
         ret = []
@@ -75,27 +76,37 @@ class GraphManager:
     def nodes_json(self, ids: List):
         """
         :param ids: list of ids to get the json data for
-        :return: json data of the specified nodes, formatted as a string
+        :return: json data with a list of data objects for the specified nodes, formatted as a string
         """
         return json.dumps(self.nodes_list(ids))
 
     def edges_json(self, ids: List):
         """
         :param ids: list of node ids to get edge data for
-        :return: json data of the specified node's edges, formatted as a string
+        :return: json data with a list of edges of the specified nodes, formatted as a string. an individual edge
+        is a 2-element list: [sourceID, targetID]
         """
         return json.dumps(self.edges_list(ids))
 
     def graph_json(self, ids: List):
         """
         :param ids: list of ids to be included
-        :return: json with "nodes" and "edges" attributes
+        :return: json with "nodes" and "edges" attributes containing data as described in GraphManager.nodes_list and
+        GraphManager.edges_list
         """
         ret = {"nodes": self.nodes_list(ids),
                "edges": self.edges_list(ids)}
         return json.dumps(ret)
 
     def neighbors_edges_json(self, _id: int):
+        """
+        gets all immediate successors and predecessors of a node, along with all edges connecting the node to those
+        successors and predecessors.
+
+        :param _id: id of node to get neighbors and edges of
+        :return: string json with "nodes" and "edges" attributes. "nodes" is a list of node data objects. "edges"
+        is a list of 2-element lists: [sourceID, targetID]
+        """
         nodes = self.nodes_list(self.neighbor_ids(_id))
         edges = self.edges_list([_id])
         ret = {"nodes": nodes, "edges": edges}
@@ -104,14 +115,14 @@ class GraphManager:
     def successors(self, _id):
         """
         :param _id: id of the node whose successors you want
-        :return: immediate children of node _id
+        :return: immediate children of node _id (list of ids)
         """
         return self.db.get_from_set(str(_id) + ".children")
 
     def predecessors(self, _id):
         """
         :param _id: id of the node whose predecessors you want
-        :return: immediate parents of node _id
+        :return: immediate parents of node _id (list of ids)
         """
         return self.db.get_from_set(str(_id) + ".parents")
 
@@ -269,7 +280,7 @@ class GraphManager:
     def search(self, query):
         """
         :param query: search query
-        :return: list of dicts {"id", "title"} for some nodes that match the query
+        :return: list of dicts {"id": x, "title": y} of some nodes that match the query
         """
         res = self.db.search_query(query)
         ret = []
