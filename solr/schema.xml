@@ -55,9 +55,10 @@
   	<field name="content" type="text_general" stored="false" indexed="true"/>
   	<field name="tags" type="text_general" stored="false" indexed="true"/>
 
+    <!--
   	<field name="text" type="text_general" stored="false" indexed="true" multiValued="true"/>
   	<copyField source="title" dest="text"/>
-  	<copyField source="content" dest="text"/>
+  	<copyField source="content" dest="text"/> -->
 
     <!-- Field to use to determine and enforce document uniqueness.
       Unless this field is marked with required="false", it will be a required field
@@ -186,7 +187,7 @@
         <filter class="solr.FlattenGraphFilterFactory"/>
         -->
         <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.EdgeNGramFilterFactory" minGramSize="2" maxGramSize="8" preserveOriginal="true"/>
+        <filter class="solr.EdgeNGramFilterFactory" minGramSize="2" maxGramSize="30" preserveOriginal="true"/>
       </analyzer>
       <analyzer type="query">
         <tokenizer class="solr.StandardTokenizerFactory"/>

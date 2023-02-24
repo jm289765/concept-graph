@@ -7,12 +7,15 @@ def main():
     g = GraphManager()
     # to reindex the search thing, call g.reindex() after deleting existing index
 
-    api = GraphAPI(g)
-    t = threading.Thread(target=api.start_server)
-    t.start()
-    # while True:
-    #    x = input()
-    #    todo: save db and exit if input tells you to
+    reindex = False
+    if reindex:
+        print("Reindexing solr...")
+        g.reindex()
+        print("Done reindexing!")
+    else:
+        api = GraphAPI(g)
+        t = threading.Thread(target=api.start_server)
+        t.start()
 
 
 if __name__ == '__main__':
