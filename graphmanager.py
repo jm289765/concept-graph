@@ -209,9 +209,10 @@ class GraphManager:
 
         # todo: make sure parent and child are valid nodes
 
-        self.unlink_nodes(0, child)  # unlink_nodes won't error if this link doesn't exist
-
         add_edge(parent, child)
+
+        if parent != 0:
+            self.unlink_nodes(0, child)  # unlink_nodes won't error if this link doesn't exist
 
         if two_way:
             add_edge(child, parent)
@@ -241,6 +242,10 @@ class GraphManager:
         if two_way and self.has_link(child, parent):
             remove_edge(child, parent)
 
+        # link to root if no other links exist
+        if len(self.predecessors(child)) == 0:
+            self.link_nodes(0, child)
+
     def set_node_attr(self, _id, attr, val):
         """
         :param _id: id of node whose attribute you want to set
@@ -249,8 +254,8 @@ class GraphManager:
         :return: id of updated node
         """
         # todo: louder error handling. return a message
-        if attr is None or val is None:
-            raise TypeError("set_node_attr: attr and val must not be None.")
+        if attr is None:
+            raise TypeError("set_node_attr: attr must not be None.")
 
         unchangeable = ["id", "created", "last_modified"]
         if attr in unchangeable:
@@ -259,6 +264,9 @@ class GraphManager:
         # make sure the node isn't the root and exists. relies on nodes not being deletable.
         if _id == 0:
             raise ValueError("set_node_attr: cannot set root node's attributes (node id 0).")
+
+        if attr == "type" and val == "root":
+            raise ValueError("set_node_attr: cannot set node's 'type' attribute to 'root'")
 
         if _id >= self.next_id:
             raise ValueError(f"set_node_attr: node {_id} does not exist.")

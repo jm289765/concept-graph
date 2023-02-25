@@ -25,20 +25,20 @@ echo "concept-graph server starter"
 BASE_DIR=$(dirname "$0")
 
 echo "starting redis..."
-cd $REDIS_PATH
+cd "$REDIS_PATH"
 echo $PWD
-$REDIS_SERVER $REDIS_CONF &
+"$REDIS_SERVER" "$REDIS_CONF" &
 echo "redis started"
-cd $BASE_DIR
+cd "$BASE_DIR"
 
 echo "starting solr..."
-cd $SOLR_PATH
-$SOLR_SERVER start
+cd "$SOLR_PATH"
+"$SOLR_SERVER" start
 echo "solr started"
-cd $BASE_DIR
+cd "$BASE_DIR"
 
 # don't need to wait for redis to finish since solr takes longer to load.
 echo "waiting 2 seconds for solr to finish loading"
 sleep 2
 echo "starting main server..."
-py $MAIN_PATH
+py "$MAIN_PATH"

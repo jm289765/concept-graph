@@ -162,7 +162,7 @@ unlink will just need id
         """
 
         def make_json_graph():
-            return self.g.graph_json(self.g.nodes)
+            return self.g.graph_json(list(self.g.nodes))
 
         keys = []
         defaults = []
@@ -235,18 +235,24 @@ class GraphAPIHandler(BaseHTTPRequestHandler):
         if file_name == "":
             file_name = "page.html"
 
-        if file_name not in ["page.html", "main.js", "httprequests.js", "styles.css"]:
+        if file_name not in ["page.html", "main.js", "httprequests.js", "styles.css", "favicon.ico"]:
             return False
 
-        with open(f"_web/{file_name}", "r") as file:
-            content_types = {
-                "html": "text/html",
-                "js": "text/javascript",
-                "css": "text/css"
-            }
+        content_types = {
+            "html": "text/html",
+            "js": "text/javascript",
+            "css": "text/css",
+            "ico": "image/x-icon",
+        }
 
-            self.send_response(200)
-            self.send_header("Content-type", content_types[file_name.split(".")[-1]])
-            self.end_headers()
-            self.wfile.write(bytes(file.read(), "utf-8"))
-            return True
+        self.send_response(200)
+        self.send_header("Content-type", content_types[file_name.split(".")[-1]])
+        self.end_headers()
+
+        if file_name == "favicon.ico":
+            with open(f"_web/{file_name}", "rb") as file:
+                self.wfile.write(file.read())
+        else:
+            with open(f"_web/{file_name}", "r") as file:
+                self.wfile.write(bytes(file.read(), "utf-8"))
+        return True
