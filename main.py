@@ -5,7 +5,7 @@ import threading
 
 def main():
     g = GraphManager()
-    # to reindex the search thing, call g.reindex() after deleting existing index
+    # to reindex solr search engine, call g.reindex() after deleting existing index
 
     reindex = False
     if reindex:
